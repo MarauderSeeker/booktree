@@ -143,6 +143,7 @@ def buildTreeFromHybridSources(path, mediaPath, files, logfile, cfg):
     normalBooks=[]
     matchedFiles=[]
     unmatchedFiles=[]
+    bookType = []
 
     #config variables
     format = files
@@ -333,8 +334,22 @@ def main(cfg):
     #make sure log_path and cache path exists
     log_path=myx_utilities.getLogPath(cfg)
 
+    if bool(cfg.get("Config/flags/ebooks")) == True:
+        bookType = "ebooks"
+    else:
+        bookType = "audiobooks"
+        
     #create the logfile
-    logfile=os.path.join(os.path.abspath(log_path),f"booktree_log_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
+    if cfg.get("Config/flags/dry_run") == "":
+        print(cfg.get("Config/flags/dry_run"))
+    else:
+        print(cfg.get("Config/flags/dry_run"))
+
+    if cfg.get("Config/flags/dry_run") == False:
+        # logfile=os.path.join(os.path.abspath(log_path),f"booktree_log_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv")
+        logfile=os.path.join(os.path.abspath(log_path),f"{bookType}.csv")
+    else:
+        logfile=os.path.join(os.path.abspath(log_path),f"{bookType}_last.csv")
 
     for paths in cfg.get("Config/paths"):
         #validate that source_path and media_path exists
@@ -373,23 +388,3 @@ if __name__ == "__main__":
 
         else:
             print(f"\nYour config path is invalid. Please check and try again!\n\tConfig file path:{myx_args.params.config_file}\n")
-
-
-
-
-
-
-        
-
-
-
-
-
-
-        
-        
-
-
- 
-
-
