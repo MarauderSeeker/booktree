@@ -312,10 +312,10 @@ class BookFile:
                 author="Unknown"
             elif ((book.authors is not None) and (len(book.authors) > 1) and (multi_author is not None)):
                     match multi_author:
-                        case "first_author": 
+                        case "{first_author}": 
                             author=book.authors[0].name  
                         
-                        case "authors":
+                        case "{authors}":
                             author=book.getAuthors()
 
                         case _: 
@@ -488,7 +488,7 @@ class MAMBook:
             # book = self.ffprobeBook
             if (len(book.title) == 0) or (fixid3):
                 book.title = myx_utilities.getAltTitle (self.name, book, cfg) 
-                
+            
             title = myx_utilities.cleanseTitle(book.title, stripUnabridged=True)
 
             #Get Authors

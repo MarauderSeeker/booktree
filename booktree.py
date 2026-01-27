@@ -184,7 +184,7 @@ def buildTreeFromHybridSources(path, mediaPath, files, logfile, cfg):
         fullpath = os.path.join(path, f)
         if os.path.getmtime(fullpath) > last_run:        
             #for each book file
-            print(f"Categorizing: {f}")
+            #print(f"Categorizing: {f}")
 
             #create a bookFile
             bf=myx_classes.BookFile(f, fullpath, path, mediaPath)
@@ -262,39 +262,49 @@ def buildTreeFromHybridSources(path, mediaPath, files, logfile, cfg):
                     isForeignBook = (book[b].bestMAMMatch.language.lower() !=  "english")
             
             #Audible search only if this is not ebooks/multibook and metadatasource includes audible, otherwise MAM search is enough
-            if (not ebooks) and ((metadata == "audible") or (metadata == "mam-audible")):
+            if (not ebooks) and ('audible' in metadata):
                 if isForeignBook:
                     #if bestMAMMatch is a foreign book, getAudible using MAM Metadata
                     book[b].getAudibleBooks(httpx, book[b].bestMAMMatch, cfg)
                     if (book[b].bestAudibleMatch is not None):
                         book[b].metadata = "audible"
                 else:
-                    #This is not a foreign book, do an Audible Search using id3 values first   
-                    #id3BestMatch = book[b].getAudibleBooks(httpx, book[b].ffprobeBook, cfg)
                     id3BestMatch = None
-
-                    #if this book is NOT a multibook, try MAM metadata search, if this is a collection, ignore MAM
-                    if (not multibook) and (not myx_utilities.isMultiBookCollection(book[b].files[0].file)):
+                    mamBestMatch = None
+                    if (metadata == "mam-audible") and ((not multibook) and (not myx_utilities.isMultiBookCollection(book[b].files[0].file))):
                         mamBestMatch = book[b].getAudibleBooks(httpx, book[b].bestMAMMatch, cfg)
-
-                        if (id3BestMatch is not None) or (mamBestMatch is not None):
-                            book[b].metadata = "audible" 
-                            #Override mamBest match if id3 has higher match rate, or if MAM didn't match
-                            if (id3BestMatch is not None) and (mamBestMatch is not None):
-                                #A match was found using either metadata
-                                if id3BestMatch.matchRate > mamBestMatch.matchRate:
-                                    #Replace bestAudibleMatch with the better matchrate
-                                    book[b].bestAudibleMatch = id3BestMatch
-                                else:
-                                    book[b].bestAudibleMatch = mamBestMatch
-                            elif (id3BestMatch is not None) and (mamBestMatch is None):
-                                #Replace bestAudibleMatch with the better matchrate
-                                book[b].bestAudibleMatch = id3BestMatch
                     else:
-                        #this is multibook so audible only
-                        if id3BestMatch is not None:
-                            book[b].metadata = "audible" 
+                        #This is not a foreign book, do an Audible Search using id3 values first   
+                        id3BestMatch = book[b].getAudibleBooks(httpx, book[b].ffprobeBook, cfg)
 
+                    if (mamBestMatch is not None) or (id3BestMatch is not None):
+                        book[b].metadata = "audible" 
+                                
+                    #if this book is NOT a multibook, try MAM metadata search, if this is a collection, ignore MAM
+                    # if (not multibook) and (not myx_utilities.isMultiBookCollection(book[b].files[0].file)):
+                    #     if (id3BestMatch is None):
+                    #         #A match was not found, so try and perform a match based on MAM metadata
+                    #         mamBestMatch = book[b].getAudibleBooks(httpx, book[b].bestMAMMatch, cfg)
+
+                    #         if (mamBestMatch is not None):
+                    #             book[b].metadata = "audible" 
+                    #             # #Override mamBest match if id3 has higher match rate, or if MAM didn't match
+                    #             # if (id3BestMatch is not None) and (mamBestMatch is not None):
+                    #             #     #A match was found using either metadata
+                    #             #     if id3BestMatch.matchRate > mamBestMatch.matchRate:
+                    #             #         #Replace bestAudibleMatch with the better matchrate
+                    #             #         book[b].bestAudibleMatch = id3BestMatch
+                    #             #     else:
+                    #             #         book[b].bestAudibleMatch = mamBestMatch
+                    #             # elif (id3BestMatch is not None) and (mamBestMatch is None):
+                    #             #     #Replace bestAudibleMatch with the better matchrate
+                    #             #     book[b].bestAudibleMatch = id3BestMatch
+                    #     else:
+                    #         book[b].metadata = "audible" 
+                    # else:
+                    #     #this is multibook so audible only
+                    #     if id3BestMatch is not None:
+                    #         book[b].metadata = "audible" 
 
             print (f"Found {len(book[b].mamMatches)} MAM matches, {len(book[b].audibleMatches)} Audible Matches")
             myx_utilities.printDivider()
@@ -383,6 +393,16 @@ if __name__ == "__main__":
             except Exception as e:
                 raise Exception(f"\nThere was a problem reading your config file {myx_args.params.config_file}: {e}\n")
             
+            #check metadata source
+            metadata = cfg.get("Config/metadata")
+
+            if ("mam" in metadata):
+                #check the cookie
+                print ("Checking MAM cookie")
+                if not myx_mam.checkMAMCookie(cfg):
+                    #display error
+                    raise Exception (f"Your MAM cookie is not valid... please check your session and rerun booktree")
+
             #start the program
             main(cfg)
 

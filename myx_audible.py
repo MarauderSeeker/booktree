@@ -8,6 +8,11 @@ import myx_classes
 def getAudibleBook(client, cfg, asin="", title="", authors="", narrators="", keywords="", language="english"):
     print (f"Searching Audible for\n\tasin:{asin}\n\ttitle:{title}\n\tauthors:{authors}\n\tnarrators:{narrators}\n\tkeywords:{keywords}")
 
+    # if metadata is libby, title is PartX, don't use it
+    metadata = cfg.get("Config/metadata")
+    if ('libby' in metadata) and (title[:5] == 'Part '):
+        title = ""
+    
     enBooks=[]
     cacheKey = myx_utilities.getHash(f"{asin}{title}{authors}{narrators}{keywords}")
     books={}
